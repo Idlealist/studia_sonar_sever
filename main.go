@@ -22,7 +22,9 @@ func main() {
     http.HandleFunc("/products", handleProducts)
     http.HandleFunc("/checkout", handleCheckout)
 
-    http.ListenAndServe(":8080", nil)
+    if err := http.ListenAndServe(":8080", nil); err != nil {
+		log.Fatalf("Server failed to start %v", err)
+	}
 }
 
 func handleProducts(w http.ResponseWriter, r *http.Request) {
@@ -30,7 +32,10 @@ func handleProducts(w http.ResponseWriter, r *http.Request) {
     if r.Method == http.MethodOptions {
         return
     }
-    json.NewEncoder(w).Encode(products)
+    if err := json.NewEncoder(w).Encode(products); err != nil {
+		http.Error(w, "Failed to encode products", http.StatusInternalServerError)
+		log.Printf("Encode error %v", err)
+	}
 }
 
 func handleCheckout(w http.ResponseWriter, r *http.Request) {
@@ -39,7 +44,11 @@ func handleCheckout(w http.ResponseWriter, r *http.Request) {
         return
     }
     var order []Product
-    json.NewDecoder(r.Body).Decode(&order)
+	if err := json.NewDecoder(r.Body).Decode(&order); err != nil {
+		http.Error(w, "Invalid order format", http.StatusBadRequest)
+		log.Printf("Decode error %v", err)
+		return
+	}
     log.Println("Order:", order)
     w.WriteHeader(http.StatusOK)
 }
